@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Free Social Media Image Resizer - Custom Dimensions</title>
+    <style>
+        :root {
+            --primary: #059669;
+            --primary-hover: #047857;
+            --bg: #f0fdf4;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background-color: var(--bg);
+            margin: 0;
+            padding: 20px;
+            color: #1f2937;
+        }
+
+        .container {
+            max-width: 700px;
+            margin: 30px auto;
+            background: white;
+            padding: 30px;
+            border-radius: 16px;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+            text-align: center;
+        }
+
+        h1 {
+            font-size: 1.8rem;
+            color: #111827;
+            margin-bottom: 5px;
+        }
+
+        p {
+            color: #4b5563;
+            font-size: 0.95rem;
+            margin-bottom: 25px;
+        }
+
+        .dropzone {
+            border: 2px dashed #10b981;
+            padding: 30px;
+            border-radius: 8px;
+            cursor: pointer;
+            background: #f9fafb;
+            position: relative;
+            margin-bottom: 20px;
+        }
+
+        input[type="file"] {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            opacity: 0;
+            cursor: pointer;
+        }
+
+        .input-group {
+            text-align: left;
+            margin-bottom: 20px;
+        }
+
+        label {
+            display: block;
+            font-weight: 600;
+            margin-bottom: 8px;
+            font-size: 0.9rem;
+            color: #374151;
+        }
+
+        select,
+        input[type="number"] {
+            width: 100%;
+            padding: 12px;
+            border: 1px solid #d1d5db;
+            border-radius: 6px;
+            font-size: 1rem;
+            background-color: #fff;
+            box-sizing: border-box;
+        }
+
+        .custom-inputs {
+            display: none;
+            gap: 15px;
+            margin-top: 15px;
+        }
+
+        .custom-inputs div {
+            flex: 1;
+            text-align: left;
+        }
+
+        button {
+            background: var(--primary);
+            color: white;
+            border: none;
+            width: 100%;
+            padding: 14px;
+            font-size: 1rem;
+            font-weight: 600;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: background 0.2s;
+            margin-top: 10px;
+        }
+
+        button:hover {
+            background: var(--primary-hover);
+        }
+
+        #preview-container {
+            margin-top: 20px;
+            display: none;
+        }
+
+        img {
+            max-width: 100%;
+            max-height: 250px;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+        }
+
+        .dimensions-badge {
+            display: inline-block;
+            background: #e0f2fe;
+            color: #0369a1;
+            padding: 4px 10px;
+            border-radius: 12px;
+            font-size: 0.85rem;
+            font-weight: 600;
+            margin-top: 8px;
+        }
+
+        .adsense-placeholder {
+            background: #f3f4f6;
+            border: 1px dashed #d1d5db;
+            padding: 15px;
+            margin: 20px 0;
+            color: #9ca3af;
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="container">
+        <h1>Social Media Image Resizer</h1>
+        <p>Instantly resize images to official dimensions or set your own custom resolution.</p>
+
+        <div class="adsense-placeholder">In-Feed AdSense Banner</div>
+
+        <div class="dropzone">
+            <span id="file-label">Click or Drag & Drop Image Here (PNG/JPG)</span>
+            <input type="file" id="image-input" accept="image/*">
+        </div>
+
+        <div class="input-group">
+            <label for="platform-select">Select Target Platform:</label>
+            <select id="platform-select" onchange="handlePlatformChange()">
+                <option value="2560x1440">YouTube Banner / Cover (2560 x 1440)</option>
+                <option value="1280x720">YouTube Thumbnail (1280 x 720)</option>
+                <option value="1584x396">LinkedIn Personal Banner (1584 x 396)</option>
+                <option value="400x400">LinkedIn Profile Picture (400 x 400)</option>
+                <option value="1200x630">Facebook Share Image / Post (1200 x 630)</option>
+                <option value="1080x1080">Instagram Square Post (1080 x 1080)</option>
+                <option value="custom">-- Use Custom Dimensions --</option>
+            </select>
+
+            <div id="dimensions-hint" class="dimensions-badge">Target: 2560 x 1440 pixels</div>
+
+            <!-- Custom Size Input Fields -->
+            <div id="custom-dimensions-fields" class="custom-inputs">
+                <div>
+                    <label for="custom-width">Width (px):</label>
+                    <input type="number" id="custom-width" value="800" min="1">
+                </div>
+                <div>
+                    <label for="custom-height">Height (px):</label>
+                    <input type="number" id="custom-height" value="600" min="1">
+                </div>
+            </div>
+        </div>
+
+        <button onclick="resizeAndDownload()">Resize & Download Image</button>
+
+        <div id="preview-container">
+            <p style="margin-bottom: 5px; font-weight: 600;">Image Preview:</p>
+            <img id="image-preview" src="" alt="Preview">
+        </div>
+
+        <div class="adsense-placeholder">Native AdSense Banner</div>
+    </div>
+
+    <script>
+        let sourceImage = null;
+        let originalFileName = "resized-image.png";
+
+        document.getElementById('image-input').addEventListener('change', function (e) {
+            const file = e.target.files[0];
+            if (!file) return;
+
+            originalFileName = file.name;
+            document.getElementById('file-label').innerText = file.name;
+
+            const reader = new FileReader();
+            reader.onload = function (event) {
+                const img = new Image();
+                img.onload = function () {
+                    sourceImage = img;
+                    document.getElementById('image-preview').src = event.target.result;
+                    document.getElementById('preview-container').style.display = 'block';
+                };
+                img.src = event.target.result;
+            };
+            reader.readAsDataURL(file);
+        });
+
+        function handlePlatformChange() {
+            const select = document.getElementById('platform-select');
+            const hint = document.getElementById('dimensions-hint');
+            const customFields = document.getElementById('custom-dimensions-fields');
+
+            if (select.value === 'custom') {
+                hint.style.display = 'none';
+                customFields.style.display = 'flex';
+            } else {
+                hint.style.display = 'inline-block';
+                customFields.style.display = 'none';
+                const [width, height] = select.value.split('x');
+                hint.innerText = `Target: ${width} x ${height} pixels`;
+            }
+        }
+
+        function resizeAndDownload() {
+            if (!sourceImage) {
+                alert("Please upload an image first!");
+                return;
+            }
+
+            const select = document.getElementById('platform-select');
+            let targetWidth, targetHeight;
+
+            if (select.value === 'custom') {
+                targetWidth = Number(document.getElementById('custom-width').value);
+                targetHeight = Number(document.getElementById('custom-height').value);
+                if (targetWidth <= 0 || targetHeight <= 0) {
+                    alert("Please enter valid width and height values.");
+                    return;
+                }
+            } else {
+                [targetWidth, targetHeight] = select.value.split('x').map(Number);
+            }
+
+            const canvas = document.createElement('canvas');
+            canvas.width = targetWidth;
+            canvas.height = targetHeight;
+            const ctx = canvas.getContext('2d');
+
+            ctx.imageSmoothingEnabled = true;
+            ctx.imageSmoothingQuality = 'high';
+
+            const imgWidth = sourceImage.width;
+            const imgHeight = sourceImage.height;
+
+            const ratio = Math.max(targetWidth / imgWidth, targetHeight / imgHeight);
+            const newWidth = imgWidth * ratio;
+            const newHeight = imgHeight * ratio;
+
+            const x = (targetWidth - newWidth) / 2;
+            const y = (targetHeight - newHeight) / 2;
+
+            ctx.drawImage(sourceImage, x, y, newWidth, newHeight);
+
+            const dataUrl = canvas.toDataURL('image/png', 1.0);
+
+            const link = document.createElement('a');
+            link.download = `resized_${targetWidth}x${targetHeight}_${originalFileName}`;
+            link.href = dataUrl;
+            link.click();
+        }
+    </script>
+</body>
+
+</html>
